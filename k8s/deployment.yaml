@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-thinker
+  labels:
+    app: chaos-thinker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-thinker
+  template:
+    metadata:
+      labels:
+        app: chaos-thinker
+    spec:
+      containers:
+      - name: chaos-thinker
+        image: chaos-thinker:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: chaos-thinker-pvc
