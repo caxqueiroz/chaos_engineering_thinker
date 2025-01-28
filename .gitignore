@@ -1,2 +1,3 @@
 chaoseng/
 data/vectorstore/
+.coverage
