@@ -1,9 +1,7 @@
 from typing import List, Dict, Any, Optional
 from llama_index import (
-    VectorStoreIndex,
     SimpleDirectoryReader,
     ServiceContext,
-    StorageContext,
     load_index_from_storage,
 )
 from llama_index.node_parser import SimpleNodeParser
@@ -11,47 +9,45 @@ from llama_index.schema import Document, ImageDocument
 from llama_index.query_engine import RouterQueryEngine
 from llama_index.tools import QueryEngineTool
 from llama_index.llms import Ollama
+from .vector_stores.base import BaseVectorStore, VectorStoreType
+from .vector_stores.in_memory import InMemoryVectorStore
+from .vector_stores.local import LocalVectorStore
+from .vector_stores.elasticsearch import ElasticsearchVectorStore
 import os
 
 class LlamaStoreService:
-    def __init__(self, persist_directory: str = "./data/llamaindex"):
-        self.persist_directory = persist_directory
+    def __init__(
+        self,
+        store_type: VectorStoreType = VectorStoreType.LOCAL,
+        persist_directory: str = "./data/llamaindex",
+        es_hosts: Optional[List[str]] = None,
+        es_config: Optional[Dict[str, Any]] = None
+    ):
         self.llm = Ollama(model="llama2")
         self.service_context = ServiceContext.from_defaults(
             llm=self.llm,
             embed_model="local"
         )
         
-        # Create separate indices for different document types
-        self.indices = {}
-        self.setup_storage()
+        # Initialize vector store based on type
+        if store_type == VectorStoreType.IN_MEMORY:
+            self.vector_store = InMemoryVectorStore(self.service_context)
+        elif store_type == VectorStoreType.LOCAL:
+            self.vector_store = LocalVectorStore(
+                self.service_context,
+                persist_dir=persist_directory
+            )
+        elif store_type == VectorStoreType.ELASTICSEARCH:
+            if not es_hosts:
+                raise ValueError("Elasticsearch hosts must be provided for Elasticsearch vector store")
+            self.vector_store = ElasticsearchVectorStore(
+                self.service_context,
+                hosts=es_hosts,
+                es_config=es_config
+            )
         
-    def setup_storage(self):
-        """Initialize or load existing indices"""
-        os.makedirs(self.persist_directory, exist_ok=True)
-        
-        # Document types and their respective directories
-        doc_types = ["network_topology", "tech_stack", "network_ips", "databases", "infrastructure"]
-        
-        for doc_type in doc_types:
-            type_dir = os.path.join(self.persist_directory, doc_type)
-            os.makedirs(type_dir, exist_ok=True)
-            
-            try:
-                # Try to load existing index
-                storage_context = StorageContext.from_defaults(
-                    persist_dir=type_dir
-                )
-                self.indices[doc_type] = load_index_from_storage(
-                    storage_context,
-                    service_context=self.service_context
-                )
-            except:
-                # Create new index if none exists
-                self.indices[doc_type] = VectorStoreIndex(
-                    [],
-                    service_context=self.service_context
-                )
+        # Load existing data
+        self.vector_store.load()
     
     def add_document(self, file_path: str, doc_type: str, metadata: Optional[Dict] = None) -> None:
         """Add a document to the appropriate index"""
@@ -72,24 +68,17 @@ class LlamaStoreService:
         for doc in documents:
             doc.metadata.update(metadata or {})
         
-        # Update index
-        if doc_type in self.indices:
-            self.indices[doc_type] = VectorStoreIndex.from_documents(
-                documents,
-                service_context=self.service_context,
-                storage_context=StorageContext.from_defaults(
-                    persist_dir=os.path.join(self.persist_directory, doc_type)
-                )
-            )
+        # Add to vector store
+        self.vector_store.add_documents(documents, doc_type)
     
     def create_query_engine(self, session_id: str) -> RouterQueryEngine:
         """Create a router query engine that can handle different types of queries"""
-        # Create query engine for each document type
         query_engine_tools = []
         
-        for doc_type, index in self.indices.items():
+        # Create query engine for each document type
+        for doc_type in self.vector_store.indices.keys():
             # Create query engine with metadata filter for session
-            query_engine = index.as_query_engine(
+            query_engine = self.vector_store.indices[doc_type].as_query_engine(
                 filters={"session_id": session_id}
             )
             
