@@ -1,10 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
-from app.models.schemas import Query, DocumentType, AnalysisResponse
+from app.models.schemas import Query, DocumentType, AnalysisResponse, ExperimentRequest, ExperimentResponse
 from app.services.session import SessionService
 from app.services.llama_store import LlamaStoreService
 from app.services.analysis import AnalysisService
+from app.services.experiment_generation.generator import ExperimentGenerator
+from app.services.experiment_generation.code_generator import ExperimentCodeGenerator
+from app.services.validation.safety_validator import SafetyValidator
 from app.guardrails.input_validation import query_validator
-from typing import Optional
+from typing import Optional, List
 
 router = APIRouter()
 
@@ -12,6 +15,9 @@ router = APIRouter()
 llama_store = LlamaStoreService()
 session_service = SessionService(llama_store)
 analysis_service = AnalysisService(llama_store)
+experiment_generator = ExperimentGenerator()
+code_generator = ExperimentCodeGenerator()
+safety_validator = SafetyValidator()
 
 @router.post("/sessions")
 async def create_session():
@@ -49,24 +55,59 @@ async def query_system(session_id: str, query: Query):
     # Check if session exists
     if session_id not in session_service.sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
-    # Validate and sanitize query using guardrails
-    validated_query, errors = query_validator.validate_query(query.question)
-    if errors:
-        raise HTTPException(status_code=400, detail={"errors": errors})
-    
+        
     try:
-        # Analyze system
-        result = analysis_service.analyze_system(
+        # Validate query
+        validated_query = query_validator(query.query)
+        
+        # Get analysis results
+        results = await analysis_service.analyze_query(
             session_id=session_id,
-            question=validated_query
+            query=validated_query
         )
         
-        return AnalysisResponse(**result)
+        return results
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/sessions/{session_id}/experiments", response_model=List[ExperimentResponse])
+async def generate_experiments(session_id: str, request: ExperimentRequest):
+    """Generate chaos engineering experiments based on system analysis."""
+    # Check if session exists
+    if session_id not in session_service.sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    try:
+        # Get system analysis from session
+        system_analysis = session_service.get_system_analysis(session_id)
+        
+        # Generate experiments
+        experiments = await experiment_generator.generate_experiments(system_analysis)
+        
+        # Validate experiments
+        validated_experiments = []
+        for exp in experiments:
+            validation = safety_validator.validate_experiment(exp, system_analysis)
+            if validation["is_safe"]:
+                # Generate implementation code
+                code = await code_generator.generate_code(
+                    experiment=exp,
+                    platform=request.platform,
+                    config=request.platform_config
+                )
+                validated_experiments.append({
+                    **exp,
+                    "validation": validation,
+                    "implementation": code
+                })
+                
+        return validated_experiments
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/sessions/{session_id}")
 async def get_session(session_id: str):
-    session = session_service.get_or_create_session(session_id)
-    return session
+    """Get session details."""
+    if session_id not in session_service.sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return session_service.sessions[session_id]
