@@ -12,6 +12,7 @@ class DocumentType(str, Enum):
 
 class DocumentInfo(BaseModel):
     filename: str
+    hash: str
     doc_type: DocumentType
     file_path: str
     upload_time: str
