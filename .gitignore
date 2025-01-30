@@ -1,3 +1,8 @@
 chaoseng/
 data/vectorstore/
 .coverage
+keys/
+*.key
+*.crt
+*.pem
+*.cert
