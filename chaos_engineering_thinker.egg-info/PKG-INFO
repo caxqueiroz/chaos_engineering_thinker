@@ -1,0 +1,13 @@
+Metadata-Version: 2.2
+Name: chaos_engineering_thinker
+Version: 0.1.0
+Requires-Python: >=3.8
+Requires-Dist: numpy
+Requires-Dist: scikit-learn
+Requires-Dist: joblib
+Requires-Dist: pytest
+Requires-Dist: fastapi
+Requires-Dist: pydantic
+Requires-Dist: python-dotenv
+Dynamic: requires-dist
+Dynamic: requires-python

@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: chaos-thinker
-        image: chaos-thinker:latest
-        imagePullPolicy: Always
+        image: chaos-engineering-thinker:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 8000
         resources:

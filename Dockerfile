@@ -15,7 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY app/ app/
-COPY main.py .
+COPY tests/ tests/
+COPY setup.py .
 
 # Create necessary directories with appropriate permissions
 RUN mkdir -p /app/data/uploads /app/data/llamaindex \
@@ -34,4 +35,4 @@ USER 1001
 EXPOSE 8000
 
 # Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
