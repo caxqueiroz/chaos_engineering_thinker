@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-engineering-app
+  labels:
+    app: chaos-engineering
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: chaos-engineering
+  template:
+    metadata:
+      labels:
+        app: chaos-engineering
+    spec:
+      containers:
+      - name: chaos-engineering
+        image: ${DOCKER_REGISTRY}/chaos-engineering:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chaos-engineering-service
+spec:
+  selector:
+    app: chaos-engineering
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: chaos-engineering-route
+spec:
+  to:
+    kind: Service
+    name: chaos-engineering-service
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
