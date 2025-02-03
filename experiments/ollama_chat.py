@@ -71,7 +71,7 @@ def print_header(model: str, prompt: str):
 
 async def main():
     parser = argparse.ArgumentParser(description='Chat with an Ollama model')
-    parser.add_argument('--model', default='llama2', help='Name of the Ollama model to use')
+    parser.add_argument('--model', default='deepseek-r1:70b', help='Name of the Ollama model to use')
     parser.add_argument('--prompt', required=True, help='Question or prompt for the model')
     parser.add_argument('--markdown', action='store_true', help='Render response as markdown')
     
