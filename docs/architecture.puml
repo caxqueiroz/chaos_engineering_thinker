@@ -1,0 +1,95 @@
+@startuml Chaos Engineering Thinker Architecture
+
+skinparam componentStyle uml2
+skinparam packageStyle rectangle
+
+package "API Layer" {
+    [API Routes] as routes
+}
+
+package "Agents" {
+    [Chaos Agent] as chaos_agent
+    [Experiment Designer] as exp_designer
+    [Orchestrator] as orchestrator
+    
+    package "Intelligence" {
+        [Experiment Planner] as planner
+        [Experiment Predictor] as predictor
+        [Memory Store] as memory
+        [Experiment Templates] as templates
+    }
+}
+
+package "Services" {
+    package "Document Analysis" {
+        [Architecture Analysis] as arch_analysis
+        [Network Topology Analysis] as network_analysis
+        [Base Analyzer] as base_analyzer
+    }
+    
+    package "Experiment Generation" {
+        [Code Generator] as code_gen
+        [Generator] as generator
+    }
+    
+    package "Storage" {
+        [Local Storage] as local_storage
+        [S3 Storage] as s3_storage
+        [Base Storage] as base_storage
+    }
+    
+    package "Vector Stores" {
+        [Local Vector Store] as local_vector
+        [Elasticsearch Store] as elastic_store
+        [In-Memory Store] as memory_store
+    }
+    
+    [LLama Store] as llama_store
+    [Document Processor] as doc_processor
+    [Analysis Service] as analysis
+    [Session Service] as session
+}
+
+package "Guardrails" {
+    [Input Validation] as input_validation
+    [Safety Validator] as safety_validator
+}
+
+package "Models" {
+    [Schemas] as schemas
+}
+
+' Relationships
+routes --> orchestrator
+routes --> input_validation
+
+orchestrator --> chaos_agent
+orchestrator --> exp_designer
+
+chaos_agent --> planner
+chaos_agent --> predictor
+planner --> templates
+planner --> memory
+
+exp_designer --> generator
+generator --> code_gen
+
+doc_processor --> base_analyzer
+base_analyzer <|-- arch_analysis
+base_analyzer <|-- network_analysis
+
+llama_store --> local_vector
+llama_store --> elastic_store
+llama_store --> memory_store
+
+base_storage <|-- local_storage
+base_storage <|-- s3_storage
+
+analysis --> doc_processor
+analysis --> llama_store
+
+' Validation flows
+input_validation --> schemas
+safety_validator --> schemas
+
+@enduml

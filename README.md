@@ -79,6 +79,26 @@ curl -X POST http://localhost:8000/sessions/{session_id}/query \
 - Integration with Ollama LLM
 - Support for various infrastructure document types
 
+## Architecture
+
+Below is the high-level architecture diagram of the ChaosThinker system:
+
+![Architecture Diagram](docs/images/architecture.png)
+
+The architecture consists of several key components:
+- **API Layer**: Handles all external requests and routes them to appropriate handlers
+- **Agents**: Intelligent components that perform specific tasks:
+  - Chaos Agent: Manages chaos engineering operations
+  - Experiment Designer: Designs and validates experiments
+  - Intelligence components for planning and prediction
+- **Services**: Core functionality implementations:
+  - Document Analysis: Processes and analyzes various document types
+  - Experiment Generation: Creates and manages experiments
+  - Storage: Handles data persistence
+  - Vector Stores: Manages document embeddings and similarity search
+- **Guardrails**: Ensures system safety and input validation
+- **Models**: Defines data schemas and structures
+
 ## Flow
 1. Session Creation:
   Users start by creating a session via /api/sessions
