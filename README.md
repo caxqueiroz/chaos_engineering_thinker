@@ -79,6 +79,40 @@ curl -X POST http://localhost:8000/sessions/{session_id}/query \
 - Integration with Ollama LLM
 - Support for various infrastructure document types
 
+## Architecture Overview
+
+### Core Components
+```text
+├── app/
+│   ├── services/                # Core service implementations
+│   │   ├── llama_store.py       - LLM model management
+│   │   ├── document_processor/  - Analysis pipelines
+│   │   └── vector_stores/       - Embedding storage
+│   └── agents/
+│       └── intelligence/       # AI-driven experimentation
+│           ├── experiment_planner.py
+│           ├── experiment_predictor.py
+│           └── memory_store.py
+```
+
+### Technical Stack
+```python
+# Key Dependencies
+chaostoolkit    # Chaos engineering toolkit
+langchain       # LLM integration
+pydantic        # Data validation
+chromadb        # Vector storage
+python-kubernetes # K8s integration
+```
+
+### Infrastructure
+```text
+├── openshift/                 # Cloud-native deployment
+│   ├── deployment.yaml        # K8s config
+│   └── deploy.sh              # CI/CD automation
+└── Dockerfile                 # Containerization
+```
+
 ## Architecture
 
 Below is the high-level architecture diagram of the ChaosThinker system:
