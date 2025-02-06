@@ -44,7 +44,7 @@ package "Services" {
         [In-Memory Store] as memory_store
     }
     
-    [LLama Store] as llama_store
+    [Vector Store] as vector_store
     [Document Processor] as doc_processor
     [Analysis Service] as analysis
     [Session Service] as session
@@ -78,15 +78,15 @@ doc_processor --> base_analyzer
 base_analyzer <|-- arch_analysis
 base_analyzer <|-- network_analysis
 
-llama_store --> local_vector
-llama_store --> elastic_store
-llama_store --> memory_store
+vector_store --> local_vector
+vector_store --> elastic_store
+vector_store --> memory_store
 
 base_storage <|-- local_storage
 base_storage <|-- s3_storage
 
 analysis --> doc_processor
-analysis --> llama_store
+analysis --> vector_store
 
 ' Validation flows
 input_validation --> schemas

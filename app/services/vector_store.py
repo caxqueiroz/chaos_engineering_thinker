@@ -15,7 +15,7 @@ from .vector_stores.local import LocalVectorStore
 from .vector_stores.elasticsearch import ElasticsearchVectorStore
 import os
 
-class LlamaStoreService:
+class VectorStoreService:
     def __init__(
         self,
         store_type: VectorStoreType = VectorStoreType.LOCAL,

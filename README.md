@@ -85,7 +85,7 @@ curl -X POST http://localhost:8000/sessions/{session_id}/query \
 ```text
 ├── app/
 │   ├── services/                # Core service implementations
-│   │   ├── llama_store.py       - LLM model management
+│   │   ├── vector_store.py       - Vector store management
 │   │   ├── document_processor/  - Analysis pipelines
 │   │   └── vector_stores/       - Embedding storage
 │   └── agents/

@@ -4,7 +4,7 @@ from app.services.experiment_generation.generator import ExperimentGenerator
 from app.services.experiment_generation.code_generator import ExperimentCodeGenerator
 from app.services.validation.safety_validator import SafetyValidator
 from app.services.analysis import AnalysisService
-from app.services.llama_store import LlamaStoreService
+from app.services.vector_store import VectorStoreService
 
 class ChaosAgent(Agent):
     """
@@ -19,7 +19,7 @@ class ChaosAgent(Agent):
     
     def __init__(
         self,
-        llama_store: Optional[LlamaStoreService] = None,
+        vector_store: Optional[VectorStoreService] = None,
         experiment_generator: Optional[ExperimentGenerator] = None,
         code_generator: Optional[ExperimentCodeGenerator] = None,
         safety_validator: Optional[SafetyValidator] = None,
@@ -31,11 +31,11 @@ class ChaosAgent(Agent):
         )
         
         # Initialize services
-        self.llama_store = llama_store or LlamaStoreService()
+        self.vector_store = vector_store or VectorStoreService()
         self.experiment_generator = experiment_generator or ExperimentGenerator()
         self.code_generator = code_generator or ExperimentCodeGenerator()
         self.safety_validator = safety_validator or SafetyValidator()
-        self.analysis_service = analysis_service or AnalysisService(self.llama_store)
+        self.analysis_service = analysis_service or AnalysisService(self.vector_store)
         
         # Agent state
         self.experiment_history: List[Dict[str, Any]] = []

@@ -3,13 +3,13 @@ import uuid
 from typing import Optional, Dict, Any
 from app.models.schemas import Session
 from app.services.document_processor import DocumentProcessor
-from app.services.llama_store import LlamaStoreService
+from app.services.vector_store import VectorStoreService
 
 class SessionService:
-    def __init__(self, llama_store: LlamaStoreService):
+    def __init__(self, vector_store: VectorStoreService):
         self.sessions: Dict[str, Session] = {}
         self.document_processor = DocumentProcessor()
-        self.llama_store = llama_store
+        self.vector_store = vector_store
     
     def get_or_create_session(self, session_id: Optional[str] = None) -> Session:
         if session_id and session_id in self.sessions:
@@ -40,7 +40,7 @@ class SessionService:
             metadata['session_id'] = session_id
             
             # Add to LlamaIndex
-            self.llama_store.add_document(
+            self.vector_store.add_document(
                 file_path=file_path,
                 doc_type=doc_type,
                 metadata=metadata

@@ -1,4 +1,8 @@
 fastapi>=0.104.1
+SQLAlchemy>=2.0.25
+python-docx>=0.8.11  # For DOCX files
+openpyxl>=3.1.2  # For XLSX files
+pypdf2>=3.0.1  # For PDF files
 uvicorn>=0.24.0
 pydantic<2.5,>=1.10.9  # Fixed version for guardrails-ai compatibility
 chromadb>=0.4.22

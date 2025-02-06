@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from app.models.schemas import Query, DocumentType, AnalysisResponse, ExperimentRequest, ExperimentResponse
 from app.services.session import SessionService
-from app.services.llama_store import LlamaStoreService
+from app.services.vector_store import VectorStoreService
 from app.services.analysis import AnalysisService
 from app.services.experiment_generation.generator import ExperimentGenerator
 from app.services.experiment_generation.code_generator import ExperimentCodeGenerator
@@ -12,9 +12,9 @@ from typing import Optional, List
 router = APIRouter()
 
 # Initialize services
-llama_store = LlamaStoreService()
-session_service = SessionService(llama_store)
-analysis_service = AnalysisService(llama_store)
+vector_store = VectorStoreService()
+session_service = SessionService(vector_store)
+analysis_service = AnalysisService(vector_store)
 experiment_generator = ExperimentGenerator()
 code_generator = ExperimentCodeGenerator()
 safety_validator = SafetyValidator()
