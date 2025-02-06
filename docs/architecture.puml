@@ -2,94 +2,146 @@
 
 skinparam componentStyle uml2
 skinparam packageStyle rectangle
+skinparam linetype ortho
+
+' Color definitions
+skinparam component {
+    BackgroundColor<<core>> LightBlue
+    BackgroundColor<<agent>> LightPink
+    BackgroundColor<<storage>> LightGreen
+    BackgroundColor<<database>> LightYellow
+    BackgroundColor<<validation>> LightGray
+    BorderColor black
+    ArrowColor black
+}
 
 package "API Layer" {
-    [API Routes] as routes
+    [FastAPI Service] as api <<core>>
 }
 
-package "Agents" {
-    [Chaos Agent] as chaos_agent
-    [Experiment Designer] as exp_designer
-    [Orchestrator] as orchestrator
+package "Intelligent Agents" {
+    [Chaos Agent] as chaos_agent <<agent>>
+    [Experiment Designer] as exp_designer <<agent>>
+    [Orchestrator] as orchestrator <<agent>>
     
-    package "Intelligence" {
-        [Experiment Planner] as planner
-        [Experiment Predictor] as predictor
-        [Memory Store] as memory
-        [Experiment Templates] as templates
+    package "Intelligence Core" {
+        [Experiment Planner] as planner <<core>>
+        [Experiment Predictor] as predictor <<core>>
+        [Memory Store] as agent_memory <<storage>>
+        [Experiment Templates] as templates <<storage>>
     }
 }
 
-package "Services" {
-    package "Document Analysis" {
-        [Architecture Analysis] as arch_analysis
-        [Network Topology Analysis] as network_analysis
-        [Base Analyzer] as base_analyzer
+package "Document Processing" {
+    [Document Processor] as doc_processor <<core>>
+    
+    package "Content Extractors" {
+        [PDF Extractor] as pdf_extractor
+        [DOCX Extractor] as docx_extractor
+        [XLSX Extractor] as xlsx_extractor
     }
     
-    package "Experiment Generation" {
-        [Code Generator] as code_gen
-        [Generator] as generator
+    package "Technical Diagram Analysis" {
+        [Diagram Detector] as diagram_detector
+        [Network Topology Analyzer] as network_analyzer
+        [Class Diagram Analyzer] as class_analyzer
+        [Sequence Diagram Analyzer] as sequence_analyzer
+        [Data Schema Analyzer] as schema_analyzer
     }
-    
-    package "Storage" {
-        [Local Storage] as local_storage
-        [S3 Storage] as s3_storage
-        [Base Storage] as base_storage
+}
+
+package "Experiment Generation" {
+    [Code Generator] as code_gen <<core>>
+    [Generator] as generator <<core>>
+    [Template Engine] as template_engine <<core>>
+}
+
+package "Storage Layer" {
+    package "Document Storage" {
+        [Local Storage] as local_storage <<storage>>
+        [S3 Storage] as s3_storage <<storage>>
     }
     
     package "Vector Stores" {
-        [Local Vector Store] as local_vector
-        [Elasticsearch Store] as elastic_store
-        [In-Memory Store] as memory_store
+        database "Elasticsearch" as elasticsearch <<database>> {
+            [Vector Index] as vector_index
+            [Document Metadata] as es_metadata
+        }
+        database "PostgreSQL" as postgres <<database>> {
+            [Document Records] as doc_records
+            [Processing Status] as proc_status
+            [Extracted Content] as extracted_content
+            [Experiment History] as exp_history
+        }
     }
-    
-    [Vector Store] as vector_store
-    [Document Processor] as doc_processor
-    [Analysis Service] as analysis
-    [Session Service] as session
 }
 
-package "Guardrails" {
-    [Input Validation] as input_validation
-    [Safety Validator] as safety_validator
+package "Guardrails & Validation" {
+    [Input Validator] as input_validator <<validation>>
+    [Safety Validator] as safety_validator <<validation>>
+    [Risk Analyzer] as risk_analyzer <<validation>>
+    [Experiment Validator] as exp_validator <<validation>>
 }
 
-package "Models" {
-    [Schemas] as schemas
+package "LLM Integration" {
+    [OpenAI Service] as openai <<core>>
+    [Prompt Templates] as prompts
 }
 
-' Relationships
-routes --> orchestrator
-routes --> input_validation
+' Core System Flow
+api --> orchestrator: Requests
+api --> input_validator: Validate
 
-orchestrator --> chaos_agent
-orchestrator --> exp_designer
+orchestrator --> chaos_agent: Delegate
+orchestrator --> exp_designer: Design
 
-chaos_agent --> planner
-chaos_agent --> predictor
-planner --> templates
-planner --> memory
+chaos_agent --> planner: Plan
+chaos_agent --> predictor: Predict
+planner --> templates: Use
+planner --> agent_memory: Learn
 
-exp_designer --> generator
-generator --> code_gen
+exp_designer --> generator: Generate
+generator --> code_gen: Create Code
+generator --> template_engine: Use Templates
 
-doc_processor --> base_analyzer
-base_analyzer <|-- arch_analysis
-base_analyzer <|-- network_analysis
+' Document Processing Flow
+doc_processor --> pdf_extractor: Extract
+doc_processor --> docx_extractor: Extract
+doc_processor --> xlsx_extractor: Extract
 
-vector_store --> local_vector
-vector_store --> elastic_store
-vector_store --> memory_store
+doc_processor --> diagram_detector: Analyze
+diagram_detector --> network_analyzer: Process
+diagram_detector --> class_analyzer: Process
+diagram_detector --> sequence_analyzer: Process
+diagram_detector --> schema_analyzer: Process
 
-base_storage <|-- local_storage
-base_storage <|-- s3_storage
+' Storage Flow
+doc_processor --> local_storage: Store
+doc_processor --> s3_storage: Store
 
-analysis --> doc_processor
-analysis --> vector_store
+doc_processor --> postgres: Store
+postgres --> doc_records: Record
+postgres --> proc_status: Track
+postgres --> extracted_content: Store
+postgres --> exp_history: Log
 
-' Validation flows
-input_validation --> schemas
-safety_validator --> schemas
+doc_processor --> elasticsearch: Index
+elasticsearch --> vector_index: Search
+elasticsearch --> es_metadata: Store
+
+' Validation Flow
+input_validator --> safety_validator: Check
+safety_validator --> risk_analyzer: Assess
+risk_analyzer --> exp_validator: Validate
+
+' LLM Integration
+network_analyzer --> openai: Describe
+class_analyzer --> openai: Describe
+sequence_analyzer --> openai: Describe
+schema_analyzer --> openai: Describe
+predictor --> openai: Predict
+planner --> openai: Plan
+
+openai --> prompts: Use
 
 @enduml

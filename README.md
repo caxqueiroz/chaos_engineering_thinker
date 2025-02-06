@@ -5,7 +5,8 @@ ChaosThinker is an AI-powered system analysis tool that helps users understand a
 ## Prerequisites
 
 - Python 3.8+
-- Ollama installed and running locally with the llama2 model
+- Access to a LLM model. Currently, the system uses Ollama for LLM capabilities.
+- Ollama server running with the deepseek-r1:70b model
 - Virtual environment (recommended)
 
 ## Installation
@@ -55,11 +56,9 @@ curl -X POST http://localhost:8000/sessions/{session_id}/documents \
 ```
 
 Document types:
-- network_topology
-- tech_stack
-- network_ips
-- databases
-- infrastructure
+- XLSX
+- PDF
+- DOCX
 
 ### 3. Query the System
 ```bash
@@ -74,107 +73,233 @@ curl -X POST http://localhost:8000/sessions/{session_id}/query \
 ## Features
 
 - Session-based document management
-- Vector store-based document storage using Chroma
+- Vector store-based document storage using In-memory, local or elasticsearch
 - LangGraph-powered analysis workflow
-- Integration with Ollama LLM
-- Support for various infrastructure document types
+- Integration with Ollama LLM and other LLMs
+- Support for various document types
 
 ## Architecture Overview
 
 ### Core Components
 ```text
 ├── app/
-│   ├── services/                # Core service implementations
-│   │   ├── vector_store.py       - Vector store management
-│   │   ├── document_processor/  - Analysis pipelines
-│   │   └── vector_stores/       - Embedding storage
-│   └── agents/
-│       └── intelligence/       # AI-driven experimentation
-│           ├── experiment_planner.py
-│           ├── experiment_predictor.py
-│           └── memory_store.py
+│   ├── api/                   # FastAPI service and routes
+│   │   └── routes/           # API endpoint definitions
+│   ├── services/             # Core service implementations
+│   │   ├── document_processor.py   # Document analysis and processing
+│   │   ├── content_extractors/     # File type-specific extractors
+│   │   │   ├── pdf_extractor.py
+│   │   │   ├── docx_extractor.py
+│   │   │   └── xlsx_extractor.py
+│   │   ├── diagram_analysis/      # Technical diagram processing
+│   │   │   ├── detector.py
+│   │   │   └── analyzers/
+│   │   └── vector_stores/        # Vector storage implementations
+│   │       ├── elasticsearch.py
+│   │       ├── local.py
+│   │       └── in_memory.py
+│   ├── agents/               # Intelligent agents
+│   │   ├── chaos_agent.py
+│   │   ├── experiment_designer.py
+│   │   └── orchestrator.py
+│   ├── intelligence/        # AI-driven experimentation
+│   │   ├── experiment_planner.py
+│   │   ├── experiment_predictor.py
+│   │   ├── memory_store.py
+│   │   └── templates.py
+│   └── guardrails/          # Validation and safety checks
+       ├── input_validator.py
+       ├── safety_validator.py
+       └── risk_analyzer.py
 ```
 
 ### Technical Stack
 ```python
-# Key Dependencies
-chaostoolkit    # Chaos engineering toolkit
-langchain       # LLM integration
+# Core Dependencies
+fastapi         # API framework
 pydantic        # Data validation
-chromadb        # Vector storage
-python-kubernetes # K8s integration
+langchain       # LLM orchestration
+chaostoolkit    # Chaos engineering toolkit
+
+# Document Processing
+PyPDF2          # PDF processing
+python-docx     # DOCX processing
+openpyxl        # XLSX processing
+Pillow          # Image processing
+
+# Storage & Search
+elasticsearch   # Vector store and search
+psycopg2        # PostgreSQL client
+s3fs            # S3 storage integration
+
+# AI & ML
+openai          # LLM integration
+numpy           # Numerical computations
+scikit-learn    # ML utilities
+
+# Infrastructure
+python-kubernetes  # K8s integration
+uvicorn            # ASGI server
 ```
 
 ### Infrastructure
 ```text
-├── openshift/                 # Cloud-native deployment
-│   ├── deployment.yaml        # K8s config
-│   └── deploy.sh              # CI/CD automation
-└── Dockerfile                 # Containerization
+├── k8s/                    # Kubernetes deployment
+│   ├── deployment.yaml     # K8s manifests
+│   ├── service.yaml        # Service definitions
+│   └── configmap.yaml      # Configuration
+├── docs/                   # Documentation
+│   ├── architecture.puml   # System architecture in PlantUML
+│   └── architecture.png    # Generated architecture diagram
+└── Dockerfile             # Containerization
 ```
 
 ## Architecture
 
 Below is the high-level architecture diagram of the ChaosThinker system:
 
-![Architecture Diagram](docs/images/architecture.png)
+![Architecture Diagram](docs/Chaos%20Engineering%20Thinker%20Architecture.png)
 
 The architecture consists of several key components:
-- **API Layer**: Handles all external requests and routes them to appropriate handlers
-- **Agents**: Intelligent components that perform specific tasks:
-  - Chaos Agent: Manages chaos engineering operations
-  - Experiment Designer: Designs and validates experiments
-  - Intelligence components for planning and prediction
-- **Services**: Core functionality implementations:
-  - Document Analysis: Processes and analyzes various document types
-  - Experiment Generation: Creates and manages experiments
-  - Storage: Handles data persistence
-  - Vector Stores: Manages document embeddings and similarity search
-- **Guardrails**: Ensures system safety and input validation
-- **Models**: Defines data schemas and structures
 
-## Flow
-1. Session Creation:
-  Users start by creating a session via /api/sessions
-  This gives them a unique session ID to track their analysis
-2. Document Upload:
-  - Users can upload various types of system documentation via /api/sessions/{session_id}/documents
-  - Supported document types include:
-      - Network topology
-      - Tech stack information
-      - Network IPs
-      - Databases
-      - Infrastructure
-  - Each document is processed and stored for analysis
-3. System Analysis:
-  - Users can query their system via /api/sessions/{session_id}/query
-  - They can ask questions about their system architecture
-  - The system analyzes the uploaded documents and provides detailed answers
-  - Responses include both the answer and the sources used to generate it
-4. Experiment Generation:
-  - Users can request chaos engineering experiments via /api/sessions/{session_id}/experiments
-  - They specify their platform (Kubernetes or Docker) and any configuration
-  - The system generates experiments of various types:
-    - Network failures
-    - Latency injection
-    - Resource exhaustion
-    - Process failures
-    - Dependency failures
-  - Each experiment includes:
-    - A clear description and hypothesis
-    - Success criteria
-    - Safety validation results
-    - Implementation code
-    - Deployment, rollback, and validation steps
-5. Safety Measures:
-  - All experiments go through safety validation
-  - Risk levels are assigned (LOW, MEDIUM, HIGH, CRITICAL)
-  - Safety checks provide detailed feedback including:
-    - Violations
-    - Warnings
-    - Recommendations
-  - The system essentially acts as an AI-powered assistant that helps users:
-    - Understand their system architecture through document analysis
-    - Generate safe and relevant chaos engineering experiments
-    - Implement and validate these experiments in their environment
-  - All interactions are done through a REST API, making it easy to integrate with existing tools and workflows.
+- **API Layer**: FastAPI service handling external requests and routing
+
+- **Intelligent Agents**:
+  - Chaos Agent: Orchestrates chaos engineering operations
+  - Experiment Designer: Creates and validates experiments
+  - Orchestrator: Coordinates agent activities
+  - Intelligence Core: Planning, prediction, and memory components
+
+- **Document Processing**:
+  - Content Extractors: Handle PDF, DOCX, and XLSX files
+  - Technical Diagram Analysis: Detect and analyze technical diagrams
+  - Diagram-to-Text Conversion: Generate descriptive text from diagrams
+
+- **Experiment Generation**:
+  - Code Generator: Creates experiment implementations
+  - Template Engine: Manages experiment templates
+  - Generator: Coordinates experiment creation
+
+- **Storage Layer**:
+  - Document Storage: Local and S3 storage options
+  - Vector Stores: Elasticsearch for vector search
+  - PostgreSQL: Document metadata and experiment history
+
+- **Guardrails & Validation**:
+  - Input Validation: Request validation
+  - Safety Validation: Security checks
+  - Risk Analysis: Experiment safety assessment
+  - Experiment Validation: Ensures experiment validity
+
+- **LLM Integration**:
+  - OpenAI Service: Powers intelligent operations
+  - Prompt Templates: Structured LLM interactions
+
+## System Flow
+
+### 1. Document Processing Pipeline
+
+#### Document Upload and Processing
+- Users upload documents via `/api/documents/upload`
+- Supported document types:
+  - PDF: Technical documentation, architecture diagrams
+  - DOCX: System specifications, design documents
+  - XLSX: Configuration data, system inventories
+- Each document goes through:
+  1. Content Extraction based on file type
+  2. Technical Diagram Detection and Analysis
+  3. Text and Metadata Extraction
+  4. Vector Embedding Generation
+
+#### Technical Diagram Processing
+- Automatic detection of diagram types:
+  - Network Topology Diagrams
+  - Class Diagrams
+  - Sequence Diagrams
+  - Data Schema Diagrams
+- For each diagram:
+  1. Image extraction and preprocessing
+  2. Diagram type classification
+  3. Specialized analysis based on type
+  4. Generation of descriptive text for LLM reasoning
+
+### 2. Knowledge Base Construction
+
+#### Storage Layer Integration
+- Document Storage:
+  - Raw files stored in Local Storage or S3
+  - Extracted text and metadata in PostgreSQL
+- Vector Storage:
+  - Document embeddings in Elasticsearch
+  - Fast similarity search capabilities
+  - Metadata indexing for filtered searches
+
+#### Intelligent Processing
+- LLM Integration:
+  - Diagram-to-text conversion
+  - Technical content understanding
+  - Context-aware responses
+- Knowledge Graph Construction:
+  - Entity extraction from documents
+  - Relationship mapping
+  - System topology understanding
+
+### 3. Experiment Design and Generation
+
+#### Analysis Phase
+- System Understanding:
+  - Document analysis for system components
+  - Architecture pattern recognition
+  - Dependency mapping
+- Risk Assessment:
+  - Component criticality analysis
+  - Failure impact prediction
+  - Safety boundary identification
+
+#### Experiment Creation
+- Intelligent Design:
+  - Context-aware experiment planning
+  - Safety-first approach
+  - Resource consideration
+- Validation Pipeline:
+  1. Input validation for safety
+  2. Risk level assessment
+  3. Safety checks and guardrails
+  4. Experiment validation
+
+### 4. Safety and Validation
+
+#### Multi-layer Validation
+- Input Validation:
+  - Request format and content validation
+  - Parameter bounds checking
+  - Resource limit validation
+
+#### Safety Checks
+- Risk Analysis:
+  - Component impact assessment
+  - Blast radius calculation
+  - Recovery path validation
+- Safety Guardrails:
+  - Automatic safety boundary enforcement
+  - Resource protection mechanisms
+  - Critical service preservation
+
+### 5. API Integration
+
+- RESTful API Endpoints:
+  - `/api/documents/*`: Document management
+  - `/api/analysis/*`: System analysis
+  - `/api/experiments/*`: Experiment operations
+  - `/api/safety/*`: Safety validations
+
+- Asynchronous Operations:
+  - Long-running process handling
+  - Progress tracking
+  - Status notifications
+
+- Integration Features:
+  - OpenAPI documentation
+  - Authentication and authorization
+  - Rate limiting and quotas
+  - Detailed error reporting
