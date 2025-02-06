@@ -1,16 +1,46 @@
 from typing import Dict, Any, List, Optional
+from datetime import datetime
 from .base import Agent
 from app.services.document_processor import DocumentProcessor
+from app.services.experiment_generation.generator import ExperimentGenerator
+from app.services.validation.safety_validator import SafetyValidator
+from app.services.analysis import AnalysisService
+from app.services.vector_store import VectorStoreService
+from app.agents.intelligence.experiment_planner import ExperimentPlanner
+from app.agents.intelligence.memory_store import MemoryStore
 
 class ExperimentDesignerAgent(Agent):
-    """Agent responsible for devising chaos engineering experiments."""
+    """
+    Agent responsible for devising and optimizing chaos engineering experiments.
     
-    def __init__(self, document_processor: Optional[DocumentProcessor] = None):
+    This agent combines document analysis, experiment generation, and intelligent planning to:
+    1. Extract system architecture and requirements from documents
+    2. Identify critical components and failure modes
+    3. Design targeted chaos experiments
+    4. Optimize experiments based on historical data
+    5. Ensure safety constraints are met
+    """
+    
+    def __init__(
+        self,
+        document_processor: Optional[DocumentProcessor] = None,
+        vector_store: Optional[VectorStoreService] = None,
+        experiment_generator: Optional[ExperimentGenerator] = None,
+        safety_validator: Optional[SafetyValidator] = None,
+        analysis_service: Optional[AnalysisService] = None,
+        memory_store: Optional[MemoryStore] = None
+    ):
         super().__init__(
             name="Experiment Designer",
-            description="Designs chaos engineering experiments based on system architecture and requirements",
-            document_processor=document_processor
+            description="Designs and optimizes chaos engineering experiments based on system analysis and historical data"
         )
+        self.document_processor = document_processor
+        self.vector_store = vector_store or VectorStoreService()
+        self.experiment_generator = experiment_generator or ExperimentGenerator()
+        self.safety_validator = safety_validator or SafetyValidator()
+        self.analysis_service = analysis_service or AnalysisService()
+        self.memory_store = memory_store or MemoryStore()
+        self.experiment_planner = ExperimentPlanner(self.memory_store)
         
     async def process_document(self, document_path: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -26,9 +56,32 @@ class ExperimentDesignerAgent(Agent):
                 - dependencies: Component dependencies
                 - critical_paths: Identified critical paths
                 - potential_failure_points: Potential points of failure
+                - risk_levels: Component risk assessments
         """
-        # Process document based on type
-        doc_type = metadata.get('doc_type', 'text')
+        # Process document and store in vector store
+        doc_type = metadata.get('doc_type', 'text')ent(document_path)
+        
+        # Store in vector store for future reference
+        self.vector_store.add_document(document_path, content, metadata)
+        
+        # Analyze system architecture
+        system_analysis = self.analysis_service.analyze_architecture(content)
+        
+        # Generate base experiments
+        experiments = self.experiment_generator.generate_experiments(system_analysis)
+        
+        # Enhance experiments with historical knowledge
+        enhanced_experiments = []
+        for exp in experiments:
+            enhanced = self.experiment_planner.enhance_experiment(exp, system_analysis)
+            if self.safety_validator.validate_experiment(enhanced):
+                enhanced_experiments.append(enhanced)
+        
+        return {
+            'system_analysis': system_analysis,
+            'experiments': enhanced_experiments,
+            'timestamp': datetime.now().isoformat()
+        }
         if doc_type == 'network_topology':
             # Extract system topology from network diagrams
             # TODO: Implement network topology analysis

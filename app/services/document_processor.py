@@ -18,6 +18,11 @@ from .storage.local import LocalStorage
 from .storage.s3 import S3Storage
 from .database import DatabaseManager
 
+# MIME types
+MIME_TYPE_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+MIME_TYPE_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+MIME_TYPE_PDF = 'application/pdf'
+
 class DocumentProcessor:
     def __init__(
         self,
@@ -52,9 +57,9 @@ class DocumentProcessor:
     def _extract_content_by_format(self, content: bytes, content_type: str) -> str:
         """Extract text content based on file format"""
         format_handlers = {
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': self._extract_docx,
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': self._extract_xlsx,
-            'application/pdf': self._extract_pdf
+            MIME_TYPE_DOCX: self._extract_docx,
+            MIME_TYPE_XLSX: self._extract_xlsx,
+            MIME_TYPE_PDF: self._extract_pdf
         }
         
         if content_type not in format_handlers:
@@ -92,7 +97,7 @@ class DocumentProcessor:
         """Extract images from document content based on file type"""
         images = []
         try:
-            if content_type == 'application/pdf':
+            if content_type == MIME_TYPE_PDF:
                 pdf = PdfReader(io.BytesIO(content))
                 for page in pdf.pages:
                     if '/XObject' in page['/Resources']:
@@ -101,7 +106,7 @@ class DocumentProcessor:
                                 img_data = obj.get_object().get_data()
                                 img = Image.open(io.BytesIO(img_data))
                                 images.append(img)
-            elif content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            elif content_type == MIME_TYPE_DOCX:
                 doc = DocxDocument(io.BytesIO(content))
                 for rel in doc.part.rels.values():
                     if "image" in rel.target_ref:
@@ -191,7 +196,7 @@ class DocumentProcessor:
         
         # Map content types to extraction functions
         content_extractors = {
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': self._extract_docx_content,
+            MIME_TYPE_DOCX: self._extract_docx_content,
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': self._extract_xlsx_content,
             'application/pdf': self._extract_pdf_content
         }
@@ -228,11 +233,6 @@ class DocumentProcessor:
         
         # Prepare metadata
         metadata = self._prepare_metadata(file, session_id, doc_type, metadata)
-        
-        # Process specific document types
-        if doc_type == "network_topology":
-            graph_data = self._process_network_topology(io.BytesIO(content))
-            metadata['graph_data'] = graph_data
         
         # Save file
         stored_path = self.storage.save_file(io.BytesIO(content), file_path, metadata)
