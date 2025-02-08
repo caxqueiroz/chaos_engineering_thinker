@@ -1,4 +1,4 @@
-# ChaosThinker
+# Chaos Assistant
 
 ChaosThinker is an AI-powered system analysis tool that helps users understand and analyze their application infrastructure using natural language queries. It uses FastAPI for the REST API, LangGraph for workflow management, and Ollama for LLM capabilities.
 
